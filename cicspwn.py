@@ -16,7 +16,7 @@ from time import sleep
 import threading
 
 import py3270
-from py3270 import Emulator,CommandError,FieldTruncateError,TerminatedError,WaitError,KeyboardStateError,FieldTruncateError,x3270App,s3270App
+from py3270 import Emulator,CommandError,FieldTruncateError,TerminatedError,WaitError,KeyboardStateError,FieldTruncateError,X3270App,S3270App
 
 
 ####################################################################################
@@ -80,7 +80,8 @@ class EmulatorIntermediate(Emulator):
 		self.delay = delay
 
 	def send_enter(self): # Allow a delay to be configured
-		self.exec_command('Enter')
+		
+                self.exec_command('Enter')
 		if self.delay > 0:
 			sleep(self.delay)
     
@@ -276,7 +277,7 @@ def connect_zOS(target):
     """
     whine('Connecting to target '+target,kind='info')
     if "992" in target or "10024" in target:
-        em.connect('L:'+target)
+        em.connect('Y:'+target)
     else:
         em.connect(target)
     em.send_enter()
@@ -284,42 +285,48 @@ def connect_zOS(target):
         whine('Could not connect to ' + target + '. Aborting.',kind='err')
         sys.exit(1)
 
-def do_authenticate(userid, password, pos_pass):
+def do_authenticate(userid, password):
    """
-       It starts writting the userid, then moves to pos_pass to write the password
-       Works for VTAM and CICS authentication
+       Must be at the CICS transaction CESN
    """
-   
+   em.send_enter()
+   data = em.screen_get()
+
+   # Even if we're at CESN we try to get there regardless
+   # It doesn't matter
+   em.send_enter()
+   em.send_clear()
+   em.safe_send('CESN')
+   em.send_enter()
+   #whine('Sending username and password','info')
+   em.save_screen(results.verbose)
+   em.safe_send(results.userid)
    posx, posy = em.get_pos()
-      
-   em.safe_send(results.userid)   
-   pwd_y_pos=em.find_field_start_on_row(pos_pass)
-            
-   em.move_to(pos_pass,pwd_y_pos)
+   pwd_y_pos=em.find_field_start_on_row(11)
+   em.move_to(11,pwd_y_pos)
    em.safe_send(results.password)
    em.send_enter()
+   em.save_screen(results.verbose)
   
    data = em.screen_get()
-   if any("Your userid is invalid" in s for s in data):
-      whine('Incorrect userid information','err')
-      sys.exit()
-   elif any("Your password is invalid" in s for s in data):
-      whine('Incorrect password information','err')
-      sys.exit()
-   elif any("Sign on failure" in s for s in data):
-      whine('Invalid credentials','err')
-      sys.exit();
-    
-def check_valid_applid(applid, do_authent, method = 1,custom_cics=False):
+   if any("DFHCE3549" in d for d in data):
+       whine("Authentication succesful",'good')
+       return True
+   else:
+      whine("Authentication failed", 'err')
+      return False   
+
+def check_valid_applid(applid, method = 1,custom_cics=False):
     """
        Tries to access a CICS app in VTAM screen. If VTAM needs
        authentication, it calls do_authenticate()
        If CICS appid is valid, it tries to access the CICS terminal
     """
-        
+    em.save_screen("/tmp/cicspwn.html")    
     em.safe_send(applid) #CICS APPLID in VTAM
     data = em.screen_get()
     em.send_enter()
+    em.save_screen("/tmp/cicspwn.html")    
     
     data = em.screen_get()
     
@@ -331,21 +338,11 @@ def check_valid_applid(applid, do_authent, method = 1,custom_cics=False):
         whine("Waiting for VTAM command completion",'warn')
         sleep(1.3)        
     
-    if do_authent:
-        pos_pass=1;
-        data = em.screen_get()   
-        for d in data:
-            if "Password " in d or "Code " in d or "passe " in d:
-                break;
-            else:
-               pos_pass +=1
-            if pos_pass > 23:
-                whine("Could not find a password field. Was looking for \"password\", \"code\" or \"pass\" strings",'err')
-                for d in data:
-                    print d
-                sys.exit();
-        do_authenticate(results.userid, results.password, pos_pass)
-        whine("Successful authentication",'good')
+
+
+        #sys.exit()
+        #do_authenticate(results.userid, results.password, pos_pass)
+        #whine("Successful authentication",'good')
     
     if custom_cics:
       em.safe_send(custom_cics)
@@ -383,7 +380,7 @@ def check_valid_applid(applid, do_authent, method = 1,custom_cics=False):
     else:
         method += 1
         whine('Returning to CICS terminal via method '+str(method),kind='info')
-        return check_valid_applid(applid, do_authent, method,custom_cics=custom_cics)
+        return check_valid_applid(applid, method,custom_cics=custom_cics)
 
 def query_cics(request, verify, line):
     """
@@ -882,7 +879,7 @@ def get_transactions(transid):
      print "ID\tPROGRAM"
      em.safe_send(CEMT+' Inquire Trans('+transid+') en                                           ')
      em.send_enter()
-     
+     em.save_screen("/tmp") 
      #sleep()
      number_tran = 0;
      more = True
@@ -2330,32 +2327,38 @@ def main(results):
     do_authent = False
     sleep(SLEEP)
     
-    if (results.userid != None and results.password !=None):
-       
-       do_authent = True
-       data = em.screen_get()   
-       pos_pass=1;
-       logon_screen=False
-       
-       for d in data:
-         if "Password" in d or "Code" in d:
-           logon_screen=True
-           break
-         else:
-           pos_pass +=1
-       if logon_screen:
-           do_authenticate(results.userid, results.password, pos_pass)
-           whine("Successful authentication", 'good')
+    #if (results.userid != None and results.password !=None):
+    #   
+    #   do_authent = True
+    #   data = em.screen_get()   
+    #   pos_pass=1;
+    #   logon_screen=False
+    #   
+    #   for d in data:
+    #     if "Password" in d or "Code" in d:
+    #       logon_screen=True
+    #       break
+    #     else:
+    #       pos_pass +=1
+    #   if logon_screen:
+    #       do_authenticate(results.userid, results.password, pos_pass)
+    #       whine("Successful authentication", 'good')
        
     # Assigning new transaction names to CECI and CEMT if need be
     CEMT = results.cemt
     CECI = results.ceci
     
     # Checking if APPLID provided is valid
-    if not check_valid_applid(results.applid, do_authent,custom_cics=results.custom_cics):
+    if not check_valid_applid(results.applid, custom_cics=results.custom_cics):
         whine("Applid "+results.applid+" not valid, try again maybe it's a network lag", "err")
         sys.exit()
     
+    if results.userid is not None and results.password is not None:
+        whine("Authenticating with user "+ results.userid,'info')
+        if not do_authenticate(results.userid,results.password):
+            whine("Failed authentication",'err')
+            sys.exit()
+
     if results.bypass:
         whine("Bypassing RACF before moving on", 'info')
         bypass_racf()
@@ -2486,15 +2489,15 @@ if __name__ == "__main__" :
         # Set the emulator intelligently based on your platform
     if platform.system() == 'Darwin':
       class WrappedEmulator(EmulatorIntermediate):
-        x3270App.executable = 'x3270'
-        s3270App.executable = 's3270'
+        X3270App.executable = 'x3270'
+        S3270App.executable = 's3270'
     elif platform.system() == 'Linux':
       class WrappedEmulator(EmulatorIntermediate):
-        x3270App.executable = 'x3270'
-        s3270App.executable = 's3270'
+        X3270App.executable = 'x3270'
+        S3270App.executable = 's3270'
     elif platform.system() == 'Windows':
       class WrappedEmulator(EmulatorIntermediate):
-        x3270App.executable = 'wc3270.exe'
+        X3270App.executable = 'wc3270.exe'
     else:
       whine('Your Platform:' + platform.system() + 'is not supported at this time.',kind='err')
       sys.exit(1)    
@@ -2505,6 +2508,7 @@ if __name__ == "__main__" :
     parser.add_argument('IP',help='The z/OS Mainframe IP or Hostname')
     parser.add_argument('PORT',help='CICS/VTAM server Port')
     parser.add_argument('-a','--applid',help='CICS ApplID on VTAM, default is CICS',default="CICS",dest='applid')
+    parser.add_argument('-v','--verbose',help='Save all screens to html file', default="/tmp/cicspwn.html", dest='verbose')
 
     group_info = parser.add_argument_group("General information")
     group_storage = parser.add_argument_group("Storage options")
@@ -2538,8 +2542,7 @@ if __name__ == "__main__" :
     group_storage.add_argument('--num', help='# item to read/add/update from a file or TSQueue',dest='item')
     group_storage.add_argument('--data', help='file containing new data to update the file',dest='data')
     group_trans.add_argument('--check-files', help='Checks security access to the files specified in <file.txt>',dest='check_files')
-    
-    
+        
     group_access.add_argument('-U', '--userid', help='Specify a userid to use on CICS', dest='userid')
     group_access.add_argument('-P', '--password', help='Specify a password for the userid', dest='password')
     group_access.add_argument('-r', help='Given the region user ID, checks wether you are allowed to use it to submit JOBs', default=False,dest='propagate_user')
