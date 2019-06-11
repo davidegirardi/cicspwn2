@@ -1491,8 +1491,7 @@ def reverse_jcl(lhost, username="CICSUSEC", kind="tso"):
 //SYSPRINT   DD SYSOUT=*
 //SYSIN      DD DUMMY
 //SYSUT2      DD DSN=&&OMG("""+tmp+"""),
-//* SYSUT2     DD DSN=CICSUSER."""+tmp+""",
-//           DISP=(NEW,CATLG,DELETE),SPACE=(TRK,5),
+//           DISP=(NEW,CATLG,DELETE),SPACE=(TRK,(5,5,10)),
 //           DCB=(RECFM=FB,LRECL=80,BLKSIZE=27920)
 //SYSUT1     DD *
  /* REXX */rh='"""+lhost.split(":")[0]+"""';rp='"""+lhost.split(":")[1]+"""';nl ='25'x;
