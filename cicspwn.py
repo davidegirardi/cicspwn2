@@ -1,5 +1,6 @@
 # -*- coding: utf-8 -*-
 
+from __future__ import print_function
 import os
 import re
 import sys
@@ -202,7 +203,7 @@ class ThreadListen(threading.Thread):
 
 def logo():
 
-  print bcolors.BLUE + '''
+  print(bcolors.BLUE + '''
 
        ::::::::   :::::::::::   ::::::::    ::::::::   ::::::::: :::       :::::::    :::
       :+:    :+:      :+:      :+:    :+:  :+:    :+:  :+:    :+::+:       :+::+:+:   :+:
@@ -212,10 +213,10 @@ def logo():
       #+#    #+#      #+#      #+#    #+#  #+#    #+#  #+#        #+#+# #+#+# #+#   #+#+#
        ########   ###########   ########    ########   ###         ###   ###  ###    ####
 
-                            The tool for some CICS p0wning !\t\tAuthor: @Ayoul3__\n'''+ bcolors.ENDC
+                            The tool for some CICS p0wning !\t\tAuthor: @Ayoul3__\n'''+ bcolors.ENDC)
 
 def signal_handler(signal, frame):
-        print 'Done !'
+        print('Done !')
         sys.exit(0)
 
 def printProgress (iteration, total, prefix = '', suffix = '', decimals = 1, barLength = 100):
@@ -253,7 +254,7 @@ def format_request(request):
 def show_screen():
     data = em.screen_get()
     for d in data:
-        print d
+        print(d)
 
 def whine(text, kind='clear', level=0):
   """
@@ -269,7 +270,7 @@ def whine(text, kind='clear', level=0):
   if level == 1: lvldisp = "\t"
   elif level == 2: lvldisp = "\t\t"
   elif level == 3: lvldisp = "\t\t\t"
-  print color+lvldisp+typdisp+text+ (bcolors.ENDC if color!="" else "")
+  print(color+lvldisp+typdisp+text+ (bcolors.ENDC if color!="" else ""))
 
 def connect_zOS(target):
     """
@@ -876,7 +877,7 @@ def get_transactions(transid):
      em.send_clear()
      em.move_to(1,2)
 
-     print "ID\tPROGRAM"
+     print("ID\tPROGRAM")
      em.safe_send(CEMT+' Inquire Trans('+transid+') en                                           ')
      em.send_enter()
      em.save_screen("/tmp")
@@ -893,7 +894,7 @@ def get_transactions(transid):
                 if (number_tran % 9) ==0 and d[1]=="+":
                     more = True
                     continue
-                print d[7:11].strip() + "\t"+d[28:36].strip()
+                print(d[7:11].strip() + "\t"+d[28:36].strip())
 
         if more:
             em.send_pf11()
@@ -910,7 +911,7 @@ def get_tsqueues(tsqueue):
      em.send_clear()
      em.move_to(1,2)
 
-     print "Tsqueue\tItems\tLength\tTransaction"
+     print("Tsqueue\tItems\tLength\tTransaction")
 
      em.safe_send(format_request(CEMT+' Inquire Tsq('+tsqueue+')'))
      em.send_enter()
@@ -937,7 +938,7 @@ def get_tsqueues(tsqueue):
             elif "Tra(" in d:
                 tsq_tran = d[10:14]
                 out += "\t"+ tsq_tran
-                print out
+                print(out)
 
         if more:
             em.send_pf11()
@@ -954,7 +955,7 @@ def get_files(filename):
      em.send_clear()
      em.move_to(1,2)
 
-     print "FILE\tTYPE\tSTATUS\tREAD\tUPDATE\tDISP\tLOCATION"
+     print("FILE\tTYPE\tSTATUS\tREAD\tUPDATE\tDISP\tLOCATION")
 
      em.safe_send(format_request(CEMT+' Inquire File('+filename+')'))
      em.send_enter()
@@ -983,7 +984,7 @@ def get_files(filename):
             elif "Dsn(" in d:
                 file_dsn = d[15:60]
                 out += "\t"+ file_dsn
-                print out
+                print(out)
 
         if more:
             em.send_pf11()
@@ -1142,10 +1143,10 @@ def handle_tsq_content(tsqueue, kind="read"):
     if kind=="read":
         if (results.item):
             whine("Fetching item "+results.item+" from TSqueue "+tsq_name,"info")
-            print results.item +"\t"+ fetch_tsq_item(tsq_name, results.item)
+            print(results.item +"\t"+ fetch_tsq_item(tsq_name, results.item))
         else:
             while current_item <= items:
-               print str(current_item) + "\t" +fetch_tsq_item(tsq_name, current_item)
+               print(str(current_item) + "\t" +fetch_tsq_item(tsq_name, current_item))
                current_item +=1
 
     elif kind=="add" and results.item:
@@ -1210,7 +1211,7 @@ def fetch_content(filename, ridfld, keylength):
     if out[0]==" ":
         keylength +=1
 
-    print "'"+out[0:keylength]+"':\t"+out[keylength:]
+    print("'"+out[0:keylength]+"':\t"+out[keylength:])
 
     return out[0:keylength]
 
@@ -1905,7 +1906,7 @@ def spool_write(token, jcl):
 
         data = em.screen_get()
         if "RESPONSE: NORMAL" not in data[22]:
-            print ''
+            print('')
             whine('Received error while writing JCL ('+str(i)+'):','err')
             whine(data[22],'err')
             return False
@@ -2217,25 +2218,25 @@ def fetch_userids():
 
     default_u = tcl_u = query_cics_scrap(CEMT+" I SYS", "Dfltuser(", 8, 0, 0)
     region_id= None;
-    print default_u+" (Default user)" if default_u else '';
+    print(default_u+" (Default user)" if default_u else '');
 
     tcl_u = query_cics_scrap(CEMT+" I TCL", "Installu(", 8, 0, 0)
     if not tcl_u:
       tcp_u = query_cics_scrap(CEMT+" I TCPIPSERV", "Installusrid(", 8, 1, 1)
-      print tcp_u if tcp_u else '';
+      print(tcp_u if tcp_u else '');
     else:
-      print tcl_u
+      print(tcl_u)
 
     con_u = query_cics_scrap(CEMT+" I CONN", "Changeusrid(", 8, 1, 1)
-    print con_u if con_u else '';
+    print(con_u if con_u else '');
     uri_u = query_cics_scrap(CEMT+" I URIMAP", "Userid(", 8, 1, 1)
-    print uri_u  if uri_u else '';
+    print(uri_u  if uri_u else '');
 
     db2_u = query_cics_scrap(CEMT+" I DB2C", "Signid(", 8, 1, 1)
-    print db2_u if db2_u else '';
+    print(db2_u if db2_u else '');
 
     pro_u = query_cics_scrap(CEMT+" I PROFILE", "Installu(", 8, 0, 0)
-    print pro_u if pro_u else '';
+    print(pro_u if pro_u else '');
 
     uow_u = query_cics_scrap(CEMT+" I UOW ", "Use(", 8, 0, 0)
     if uow_u:
@@ -2243,7 +2244,7 @@ def fetch_userids():
            if default_u and default_u != uu:
               uu += " (Probbaly region ID)"
               region_id = uu
-           print uu
+           print(uu)
     return region_id
 
 def check_surrogat(surrogat_user):
@@ -2296,9 +2297,9 @@ def check_resources(kind, trans):
         variables = ["READ", 'UPDATE']
         results = get_cics_value(CECI+' QUERY SECURITY REST('+kind+') RESID('+t.strip()+')', variables, True)
         if results[0] in cvda.keys() and results[1] in cvda.keys():
-            print t.strip()+'\t'+cvda[results[0]]+'\t'+cvda[results[1]]
+            print(t.strip()+'\t'+cvda[results[0]]+'\t'+cvda[results[1]])
         else:
-            print t.strip()+'\t'+'error'+'\t'+'error'
+            print(t.strip()+'\t'+'error'+'\t'+'error')
 
 def copy_tran(old_tran, new_tran):
     whine("Getting current group of "+old_tran,'info')
@@ -2467,13 +2468,13 @@ def main(results):
 
     elif results.all_options:
         get_infos()
-        print ""
+        print("")
         whine("Getting all files", 'info')
         get_files("*")
-        print ""
+        print("")
         whine("Getting all tsqueues", 'info')
         get_tsqueues("*")
-        print ""
+        print("")
         whine("Scraping userids from different menus", 'info')
         em.send_pf3();
         region_id = fetch_userids()
