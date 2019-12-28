@@ -18,6 +18,7 @@ import threading
 
 import py3270
 from py3270 import Emulator,CommandError,FieldTruncateError,TerminatedError,WaitError,KeyboardStateError,FieldTruncateError,X3270App,S3270App
+from six.moves import range
 
 
 ####################################################################################
@@ -108,7 +109,7 @@ class EmulatorIntermediate(Emulator):
 
         # Send text without triggering field protection
         def safe_send(self, text):
-                for i in xrange(0, len(text)):
+                for i in range(0, len(text)):
                         self.send_string(text[i])
                         if self.status.field_protection == 'P':
                                 return False # We triggered field protection, stop
@@ -133,8 +134,8 @@ class EmulatorIntermediate(Emulator):
 
         # Search the screen for text when we don't know exactly where it is, checking for read errors
         def find_response(self, response):
-                for rows in xrange(1,int(self.status.row_number)+1):
-                        for cols in xrange(1, int(self.status.col_number)+1-len(response)):
+                for rows in range(1,int(self.status.row_number)+1):
+                        for cols in range(1, int(self.status.col_number)+1-len(response)):
                                 try:
                                         if self.string_found(rows, cols, response):
                                                 return True
@@ -153,7 +154,7 @@ class EmulatorIntermediate(Emulator):
                 # from what I can tell - if you get a SF(c0=c*) it means a start of field.
                 # This is then what we are looking for
 
-                for _ in xrange(0,2):
+                for _ in range(0,2):
                         response = self.exec_command('ReadBuffer(Ascii)')
                         if ''.join(response.data).strip()=="":
                                 sleep(0.3)
@@ -242,7 +243,7 @@ def printProgress (iteration, total, prefix = '', suffix = '', decimals = 1, bar
         sys.stdout.flush()
 
 def rand_name(size=8, chars=string.ascii_letters):
-        return ''.join(random.choice(chars) for x in xrange(1, size))
+        return ''.join(random.choice(chars) for x in range(1, size))
 
 def format_request(request):
     i =0
