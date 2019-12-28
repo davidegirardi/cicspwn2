@@ -85,26 +85,26 @@ class EmulatorIntermediate(Emulator):
 
         def send_enter(self): # Allow a delay to be configured
 
-                self.exec_command('Enter')
+                self.exec_command(b'Enter')
                 if self.delay > 0:
                         sleep(self.delay)
 
         def send_clear(self): # Allow a delay to be configured
-                self.exec_command('Clear')
+                self.exec_command(b'Clear')
                 if self.delay > 0:
                         sleep(self.delay)
 
         def send_eraseEOF(self): # Allow a delay to be configured
-                self.exec_command('EraseEOF')
+                self.exec_command(b'EraseEOF')
                 if self.delay > 0:
                         sleep(self.delay)
 
         def send_pf11(self):
-                self.exec_command('PF(11)')
+                self.exec_command(b'PF(11)')
 
         def screen_get(self):
-                response = self.exec_command('Ascii()')
-                if ''.join(response.data).strip() == "":
+                response = self.exec_command(b'Ascii()')
+                if b''.join(response.data).strip() == b'':
                     sleep(0.5)
                     return self.screen_get()
                 return response.data
@@ -157,7 +157,7 @@ class EmulatorIntermediate(Emulator):
                 # This is then what we are looking for
 
                 for _ in range(0,2):
-                        response = self.exec_command('ReadBuffer(Ascii)')
+                        response = self.exec_command(b'ReadBuffer(Ascii)')
                         if ''.join(response.data).strip()=="":
                                 sleep(0.3)
                         else:
@@ -172,13 +172,13 @@ class EmulatorIntermediate(Emulator):
 
     # Get the current x3270 cursor position
         def get_pos(self):
-                results = self.exec_command('Query(Cursor)')
+                results = self.exec_command(b'Query(Cursor)')
                 row = int(results.data[0].split(' ')[0])
                 col = int(results.data[0].split(' ')[1])
                 return (row,col)
 
         def get_hostinfo(self):
-                return self.exec_command('Query(Host)').data[0].split(' ')
+                return self.exec_command(b'Query(Host)').data[0].split(' ')
 
 class ThreadListen(threading.Thread):
     """Threaded client connection for reverse REXX"""
@@ -273,7 +273,11 @@ def whine(text, kind='clear', level=0):
   if level == 1: lvldisp = "\t"
   elif level == 2: lvldisp = "\t\t"
   elif level == 3: lvldisp = "\t\t\t"
-  print(color+lvldisp+typdisp+text+ (bcolors.ENDC if color!="" else ""))
+  print(color + 
+          lvldisp + 
+          typdisp + 
+          text + 
+          (bcolors.ENDC if color!="" else ""))
 
 def connect_zOS(target):
     """
@@ -313,7 +317,7 @@ def do_authenticate(userid, password):
    em.save_screen(results.verbose)
 
    data = em.screen_get()
-   if any("DFHCE3549" in d for d in data):
+   if any(b"DFHCE3549" in d for d in data):
        whine("Authentication succesful",'good')
        return True
    else:
@@ -334,11 +338,11 @@ def check_valid_applid(applid, method = 1,custom_cics=False):
 
     data = em.screen_get()
 
-    if any("Invalid Command" in d for d in data):
+    if any(b"Invalid Command" in d for d in data):
         whine('Invalid APPLID "'+applid+'"','err');
         sys.exit()
 
-    if any("Command is in progress" in d for d in data):
+    if any(b"Command is in progress" in d for d in data):
         whine("Waiting for VTAM command completion",'warn')
         sleep(1.3)
 
@@ -397,15 +401,15 @@ def query_cics(request, verify, line):
 
     data = em.screen_get()
 
-    if len(request) > 4 and "DFHAC2002" in data[22] and "CECI" in data[22]:
+    if len(request) > 4 and b"DFHAC2002" in data[22] and b"CECI" in data[22]:
         whine("Cannot access CECI, try --bypass switch to bypass RACF",'err')
         sys.exit()
-    if len(request) > 4 and "DFHAC2002" in data[22] and "CEMT" in data[22]:
+    if len(request) > 4 and b"DFHAC2002" in data[22] and b"CEMT" in data[22]:
         whine("Cannot access CEMT, try --bypass switch to bypass RACF",'err')
         sys.exit()
 
     for v in verify:
-        if v in data[line-1].strip():
+        if v.encode() in data[line-1].strip():
             return True
     else:
         return False
@@ -426,10 +430,10 @@ def get_cics_value(request, identifier, double_enter=False):
     em.send_enter()
     data = em.screen_get()
 
-    if "DFHAC2002" in data[22] and "CECI" in data[22]:
+    if b"DFHAC2002" in data[22] and b"CECI" in data[22]:
         whine("Cannot access CECI, try --bypass switch to bypass RACF",'err')
         sys.exit()
-    if "DFHAC2002" in data[22] and "CEMT" in data[22]:
+    if b"DFHAC2002" in data[22] and b"CEMT" in data[22]:
         whine("Cannot access CEMT, try --bypass switch to bypass RACF",'err')
         sys.exit()
 
@@ -465,6 +469,9 @@ def query_cics_scrap(request, pattern, length, depth, scrolls):
     out = []
     i =0;
 
+    # FIXME temporary encoding of pattern
+    pattern = pattern.encode()
+
     if depth == 1:
        em.move_to(3,7)
        em.send_enter()
@@ -474,7 +481,7 @@ def query_cics_scrap(request, pattern, length, depth, scrolls):
         i +=1;
     data = em.screen_get()
 
-    if "NOT AUTHORIZED" in data[2] or "DFHAC2002" in data[22]:
+    if b"NOT AUTHORIZED" in data[2] or b"DFHAC2002" in data[22]:
         whine("Not authorized to issue "+request+", try --bypass switch to bypass RACF",'err')
         return None
 
@@ -483,7 +490,7 @@ def query_cics_scrap(request, pattern, length, depth, scrolls):
            pos= d.find(pattern) + len(pattern)
            if d[pos:pos+length].strip() in out:
               continue;
-           out.append(d[pos:pos+length].strip().replace(")",""))
+           out.append((d[pos:pos+length].strip().replace(b")", b"")).decode())
 
     em.send_pf3()
     if len(out) > 0:
@@ -505,10 +512,10 @@ def send_cics(request, double=False):
     em.send_enter()
     data = em.screen_get()
 
-    if "DFHAC2002" in data[22] and "CECI" in data[22]:
+    if b"DFHAC2002" in data[22] and b"CECI" in data[22]:
         whine("Cannot access CECI, try --bypass switch to bypass RACF",'err')
         sys.exit()
-    elif "DFHAC2002" in data[22] and "CEMT" in data[22]:
+    elif b"DFHAC2002" in data[22] and b"CEMT" in data[22]:
         whine("Cannot access CEMT, try --bypass switch to bypass RACF",'err')
         sys.exit()
 
@@ -516,9 +523,9 @@ def send_cics(request, double=False):
        em.send_enter()
     data = em.screen_get()
 
-    if "RESPONSE: NORMAL" in data[22]:
+    if b"RESPONSE: NORMAL" in data[22]:
         return True
-    elif "RESPONSE: NOSPOOL" in data[22]:
+    elif b"RESPONSE: NOSPOOL" in data[22]:
         return False
     else:
         whine('Error:' + data[22],'err')
@@ -536,7 +543,7 @@ def get_hql_files():
 
     data = em.screen_get()
     for d in data:
-       if "Dsn" in d and "(DFH" not in d:
+       if b"Dsn" in d and b"(DFH" not in d:
            pos= d.find("Dsn(") + len("Dsn(")
            dataset =  d[pos:pos+44].strip()
            em.send_pf3()
@@ -557,14 +564,14 @@ def get_hql_libraries():
 
     data = em.screen_get()
     for d in data:
-       if "DFHRPL" in d:
+       if b"DFHRPL" in d:
            found_dfhrpl=True;
            continue
        if found_dfhrpl:
-           pos= d.find("(") + len("(")
+           pos= d.find(b'(') + len(b'(')
            dataset =  d[pos:pos+44].strip()
            em.send_pf3()
-           return dataset[:dataset.rfind(".")]+".**"
+           return dataset[:dataset.rfind(b".")]+b".**"
 
     em.send_pf3()
     return None
@@ -580,15 +587,15 @@ def get_users():
     em.send_enter()
 
     data = em.screen_get()
-    if "NOT AUTHORIZED" in data[2]:
+    if b"NOT AUTHORIZED" in data[2]:
         whine ("CEMT I TASK not authorized", 'err')
         return None
-    elif "DFHAC2002" in data[22]:
+    elif b"DFHAC2002" in data[22]:
         whine('Cannot access CEMT to list active users, try --bypass switch','err')
         return None
     for d in data:
-       if "Use" in d:
-           pos= d.find("Use(") + len("Use(")
+       if b"Use" in d:
+           pos= d.find(b"Use(") + len(b"Use(")
            out.append(d[pos:pos+8].strip())
 
     em.send_pf3()
@@ -643,11 +650,11 @@ def activate_supplied(old_name, old_group, new_name, new_group):
 
     data = em.screen_get();
 
-    if "already exists" in data[20]:
+    if b"already exists" in data[20]:
         whine("Already copied "+old_name.upper()+" to "+new_name.upper()+" in group "+old_group.upper(),"info",1)
 
 
-    elif not "COPY SUCCESSFUL" in data[22]:
+    elif not b"COPY SUCCESSFUL" in data[22]:
         whine('Could not copy '+old_name.upper()+' to a new transaction name '+new_name.upper()+' in group '+new_group.upper(),'err',1)
         whine(data[22],'err')
         return False
@@ -659,7 +666,7 @@ def activate_supplied(old_name, old_group, new_name, new_group):
     em.send_enter();
     data = em.screen_get();
 
-    if not "INSTALL SUCCESSFUL" in data[22]:
+    if not b"INSTALL SUCCESSFUL" in data[22]:
         whine('Could not install new '+new_name.upper()+' transaction in group '+new_group.upper()+'','err',1)
         whine(data[22],'err')
         return False
@@ -808,10 +815,10 @@ def get_infos():
     userid = values[0]; sysid = values[1]; netname = values[2]; language = values[3]
 
 
-    whine("Userid: "+userid,'good',1)
-    whine("Sysid: "+sysid,'good',1)
-    whine("LU session name: "+netname,'good',1)
-    whine("language: "+language,'good',1)
+    whine("Userid: "+userid.decode(),'good',1)
+    whine("Sysid: "+sysid.decode(),'good',1)
+    whine("LU session name: "+netname.decode(),'good',1)
+    whine("language: "+language.decode(),'good',1)
 
     hlq_files = get_hql_files()
     hlq_libraries = get_hql_libraries()
@@ -819,13 +826,13 @@ def get_infos():
     if hlq_files:
        whine("Files HLQ:\t"+hlq_files,'good',1)
     if hlq_libraries:
-       whine("Library path:\t"+hlq_libraries,'good',1)
+       whine("Library path:\t"+hlq_libraries.decode(),'good',1)
 
     whine("Active users", 'info')
     users = get_users()
     if users:
        for u in users:
-           whine(u, 'good', 1)
+           whine(u.decode(), 'good', 1)
     else:
         whine('No active user', 'info',1)
 
@@ -892,7 +899,7 @@ def get_transactions(transid):
         more = False;
         data = em.screen_get()
         for d in data:
-            if "Tra(" in d and "NOT FOUND" not in d:
+            if b"Tra(" in d and b"NOT FOUND" not in d:
                 number_tran +=1;
                 if (number_tran % 9) ==0 and d[1]=="+":
                     more = True
@@ -927,7 +934,7 @@ def get_tsqueues(tsqueue):
         more = False;
         data = em.screen_get()
         for d in data:
-            if "Tsq(" in d and "NOT FOUND" not in d:
+            if b"Tsq(" in d and b"NOT FOUND" not in d:
                 number_tsq +=1;
                 if (number_tsq % 9) ==0 and d[1]=="+":
                     more = True
@@ -937,8 +944,8 @@ def get_tsqueues(tsqueue):
                 tsq_items = d[29:34].strip()
                 tsq_length = d[40:50].strip()
 
-                out = tsq_name + "\t" + tsq_items +"\t" + tsq_length
-            elif "Tra(" in d:
+                out = tsq_name + b"\t" + tsq_items +b"\t" + tsq_length
+            elif b"Tra(" in d:
                 tsq_tran = d[10:14]
                 out += "\t"+ tsq_tran
                 print(out)
@@ -971,21 +978,21 @@ def get_files(filename):
         more = False;
         data = em.screen_get()
         for d in data:
-            if "Fil(" in d and "NOT FOUND" not in d:
+            if b"Fil(" in d and b"NOT FOUND" not in d:
                 number_files +=1;
                 if (number_files % 9) ==0 and d[1]=="+":
                     more = True
                     continue
 
-                file_name = d[7:15].strip()
-                file_type = d[17:20].strip()
-                file_status = d[21:24].strip()
-                file_access_read = d[29:32].strip()
-                file_access_update = d[33:36].strip()
-                file_dsp = d[53:56].strip()
+                file_name = d[7:15].strip().decode()
+                file_type = d[17:20].strip().decode()
+                file_status = d[21:24].strip().decode()
+                file_access_read = d[29:32].strip().decode()
+                file_access_update = d[33:36].strip().decode()
+                file_dsp = d[53:56].strip().decode()
                 out = file_name + "\t" + file_type +"\t" + file_status +"\t"+ file_access_read +"\t"+ file_access_update +"\t"+ file_dsp
-            elif "Dsn(" in d:
-                file_dsn = d[15:60]
+            elif b"Dsn(" in d:
+                file_dsn = d[15:60].decode()
                 out += "\t"+ file_dsn
                 print(out)
 
@@ -1014,7 +1021,7 @@ def add_content_tsq(tsq_name, item, content_file):
     em.safe_send(format_request(CECI))
     em.send_enter()
     data = em.screen_get()
-    if "DFHAC2002" in data[22]:
+    if b"DFHAC2002" in data[22]:
         whine('Cannot access CECI, try --bypass to bypass RACF','err')
         sys.exit()
 
@@ -1054,7 +1061,7 @@ def add_content_tsq(tsq_name, item, content_file):
 
     data = em.screen_get();
 
-    if "NORMAL" in data[22]:
+    if b"NORMAL" in data[22]:
         whine("item was added successfully to TSQueue "+tsq_name,'good')
     else:
         whine("Error while  adding/updating the item",'err')
@@ -1068,7 +1075,7 @@ def fetch_tsq_item(tsq_name, item):
     em.move_to(1,2)
     data = em.screen_get()
 
-    if "STATUS:  SESSION ENDED" in data[1]:
+    if b"STATUS:  SESSION ENDED" in data[1]:
         req_read = CECI +' READQ TS QUEUE('+tsq_name.upper()+') ITEM('+str(item)+') INTO(&FI)'
     else:
         req_read = ' READQ TS QUEUE('+tsq_name.upper()+') ITEM('+str(item)+') INTO(&FI)'
@@ -1078,13 +1085,13 @@ def fetch_tsq_item(tsq_name, item):
 
     data = em.screen_get()
 
-    if "DFHAC2002" in data[22]:
+    if b"DFHAC2002" in data[22]:
         whine("Cannot access CECI to fetch tsqueue's content, try --bypass switch to bypass RACF",'err')
         sys.exit()
     em.send_enter() # Send twice Enter to confirm transaction
 
     data = em.screen_get()
-    if "NORMAL" not in data[22]:
+    if b"NORMAL" not in data[22]:
         whine(data[22],'err')
         return -1
 
@@ -1094,7 +1101,7 @@ def fetch_tsq_item(tsq_name, item):
     posx = 0     # localize the variable &FI
     i =0;
     for d in data:
-        if "&FI" in d :
+        if b"&FI" in d :
             posx = i
         i +=1
 
@@ -1129,11 +1136,11 @@ def handle_tsq_content(tsqueue, kind="read"):
     em.safe_send(format_request(req_list_file))
     em.send_enter()
     data = em.screen_get()
-    if "NOT AUTHORIZED" in data[2] or "DFHAC2002" in data[22]:
+    if b"NOT AUTHORIZED" in data[2] or b"DFHAC2002" in data[22]:
         whine("Cannot access CEMT to list TSQueues, try --bypass switch to bypass RACF",'err')
 
     for d in data:
-       if tsq_name.upper() in d and "I TSQ" not in d:
+       if tsq_name.upper() in d and b"I TSQ" not in d:
           items = int(d[29:34].strip())
 
     if items ==0:
@@ -1167,7 +1174,7 @@ def fetch_content(filename, ridfld, keylength):
     em.move_to(1,2)
     data = em.screen_get()
 
-    if "STATUS:  SESSION ENDED" in data[1]:
+    if b"STATUS:  SESSION ENDED" in data[1]:
         req_read = CECI+' READ FI('+filename.upper()+') RI('+str(ridfld)+') GTE INTO(&FI)'
     else:
         req_read = ' READ FI('+filename.upper()+') RI('+str(ridfld)+') GTE INTO(&FI)'
@@ -1175,7 +1182,7 @@ def fetch_content(filename, ridfld, keylength):
     em.safe_send(req_read)
     em.send_enter()
     data = em.screen_get()
-    if "DFHAC2002" in data[22]:
+    if b"DFHAC2002" in data[22]:
         whine('Cannot access CECI, try --bypass to bypass RACF','err')
         sys.exit()
 
@@ -1183,10 +1190,10 @@ def fetch_content(filename, ridfld, keylength):
 
     data = em.screen_get()
 
-    if "NOTFND" in data[22]:
+    if b"NOTFND" in data[22]:
         whine("No more records in the file",'info')
         sys.exit();
-    elif "NORMAL" not in data[22]:
+    elif b"NORMAL" not in data[22]:
         whine(data[22],'err')
         sys.exit()
 
@@ -1196,7 +1203,7 @@ def fetch_content(filename, ridfld, keylength):
     posx = 0     # localize the variable &FI
     i =0;
     for d in data:
-        if "&FI" in d :
+        if b"&FI" in d :
             posx = i
         i +=1
 
@@ -1225,10 +1232,10 @@ def change_file_attributes(filename, attr):
     em.send_enter()
     data = em.screen_get()
 
-    if "NORMAL" in data[22]:
-        if "OPEN" in attr:
+    if b"NORMAL" in data[22]:
+        if b"OPEN" in attr:
             whine("File "+filename+" is "+attr, 'good')
-    elif "NOT AUTHORIZED" in data[2] or "DFHAC2002" in data[22]:
+    elif b"NOT AUTHORIZED" in data[2] or b"DFHAC2002" in data[22]:
         whine("Cannot access CEMT to change file attributes, try --bypass switch to bypass RACF",'err')
     else:
         whine('Cannot open/enable/read or update the file. Might not exist on disk','err')
@@ -1243,7 +1250,7 @@ def update_content(filename, ridfld, recordsize, content_file):
 
     em.send_enter() # Send twice Enter to confirm transaction
     data = em.screen_get();
-    if not "NORMAL" in data[22]:
+    if not b"NORMAL" in data[22]:
         whine("Error while requesting a hold on the file for update",'err')
         whine(data[22],'err')
 
@@ -1254,7 +1261,7 @@ def update_content(filename, ridfld, recordsize, content_file):
     em.send_enter()
     em.send_enter() # Send twice Enter to confirm transaction
 
-    if "NORMAL" in data[22]:
+    if b"NORMAL" in data[22]:
         whine("record "+ridfld+" updated successfully",'good')
     else:
         whine("Error while requesting a hold on the file for update",'err')
@@ -1280,7 +1287,7 @@ def add_content(filename, ridfld, recordsize, content_file):
     em.safe_send(format_request(CECI))
     em.send_enter()
     data = em.screen_get()
-    if "DFHAC2002" in data[22]:
+    if b"DFHAC2002" in data[22]:
         whine('Cannot access CECI, try --bypass to bypass RACF','err')
         sys.exit()
 
@@ -1317,11 +1324,11 @@ def add_content(filename, ridfld, recordsize, content_file):
 
     data = em.screen_get();
 
-    if "NORMAL" in data[22]:
+    if b"NORMAL" in data[22]:
         whine("item "+ridfld+" was added successfully to file "+filename,'good')
-    if "LENGERR" in data[22]:
+    if b"LENGERR" in data[22]:
         whine("Error length, whole record (key+data) must be equal to "+recordsize,'good')
-    elif "DUPREC" in data[22]:
+    elif b"DUPREC" in data[22]:
         whine('Found record '+ridfld+', will proceed with the update','info')
         update_content(filename, ridfld, recordsize, content_file)
     else:
@@ -1349,9 +1356,9 @@ def handle_file_content(filename, kind="read"):
     em.send_enter()
 
     data = em.screen_get()
-    if "Ope " in data[2]:
+    if b"Ope " in data[2]:
         file_opened = True
-    if "Ena " in data[2]:
+    if b"Ena " in data[2]:
         file_enabled = True
 
     if file_enabled and file_opened:
@@ -1378,7 +1385,7 @@ def handle_file_content(filename, kind="read"):
     em.send_enter()
 
     data = em.screen_get()
-    if "NOT AUTHORIZED" in data[2] or "DFHAC2002" in data[22]:
+    if b"NOT AUTHORIZED" in data[2] or b"DFHAC2002" in data[22]:
        whine("Cannot access CEMT to get get key and record length (defaults will be used rsize=80, klen=6), try --bypass switch to bypass RACF",'err')
     else:
         # Display more info about the file
@@ -1777,13 +1784,13 @@ def set_mixedCase():
     em.send_enter()
 
     data = em.screen_get()
-    if "NOT AUTHORIZED" in data[2] or "DFHAC2002" in data[22]:
+    if b"NOT AUTHORIZED" in data[2] or b"DFHAC2002" in data[22]:
         whine("Cannot access CEMT to get terminal ID, try --bypass switch to bypass RACF",'err')
 
 
     for d in data:
         termID = None
-        if "Fac(" in d and CEMT in d:
+        if b"Fac(" in d and CEMT in d:
             pos = d.find("Fac(")+len("Fac(")
             termID = d[pos:pos+4]
             whine('Got TerminalID '+termID,'good', 1)
@@ -1801,12 +1808,12 @@ def set_mixedCase():
     em.send_enter()
 
     data = em.screen_get()
-    if "DFHAC2002" in data[22]:
+    if b"DFHAC2002" in data[22]:
         whine("Cannot access CECI to set terminal to mixed case, try --bypass switch to bypass RACF",'err')
         return False
 
     em.send_enter()
-    if "NORMAL" in data[22]:
+    if b"NORMAL" in data[22]:
       whine('Current terminal is NOW mixed case','good',1)
     else:
       whine('Could not set terminal to mixed case','err',1)
@@ -1830,7 +1837,7 @@ def open_spool():
     em.send_enter()
 
     data = em.screen_get()
-    if "DFHAC2002" in data[22] and "CECI" in data[22]:
+    if b"DFHAC2002" in data[22] and b"CECI" in data[22]:
         whine("Cannot access CECI to open a spool, try --bypass switch to bypass RACF",'err')
         sys.exit()
 
@@ -1841,13 +1848,13 @@ def open_spool():
     for d in data:
         #print d
         token = None
-        if "Token( '" in d:
+        if b"Token( '" in d:
             pos = d.find("Token( '")+len("Token( '")
             token = d[pos:pos+8]
             if token.strip() != "" :
                 whine('Spool open ! Got token '+token,'good')
             break
-    if "RESPONSE: NORMAL" not in data[22]:
+    if b"RESPONSE: NORMAL" not in data[22]:
         whine('Could not grab a valid token...a good chance the spool disabled, use -i to verify','err')
         whine(data[22],'err')
     return token
@@ -1908,7 +1915,7 @@ def spool_write(token, jcl):
           printProgress(i, total, prefix = '', suffix = 'Complete', barLength = 30)
 
         data = em.screen_get()
-        if "RESPONSE: NORMAL" not in data[22]:
+        if b"RESPONSE: NORMAL" not in data[22]:
             print('')
             whine('Received error while writing JCL ('+str(i)+'):','err')
             whine(data[22],'err')
@@ -1955,7 +1962,7 @@ def spool_write2(token, jcl):
 
     show_screen()
     data = em.screen_get()
-    if "RESPONSE: NORMAL" not in data[22]:
+    if b"RESPONSE: NORMAL" not in data[22]:
         whine('Received error while writing JCL ('+str(i)+'):\n'+data[22],'err')
         sys.exit()
 
@@ -1973,7 +1980,7 @@ def close_spool():
     em.send_enter()
 
     data = em.screen_get()
-    if "RESPONSE: NORMAL" not in data[22]:
+    if b"RESPONSE: NORMAL" not in data[22]:
             whine('Problem submitting the spool','err')
             whine(data[22],'err')
             return False
@@ -2058,7 +2065,7 @@ def write_tdqueue(jcl):
           printProgress(i, total, prefix = '', suffix = 'Complete', barLength = 30)
 
         data = em.screen_get()
-        if "RESPONSE: NORMAL" not in data[22]:
+        if b"RESPONSE: NORMAL" not in data[22]:
             whine('Received error while writing JCL ('+str(i)+'):\n'+data[22],'err')
             return False
 
@@ -2167,10 +2174,10 @@ def activate_transaction(ena_trans):
         em.send_enter()
 
         data = em.screen_get()
-        if "DFHAC2002" in data[22]:
+        if b"DFHAC2002" in data[22]:
             whine('Cannot access CEMT to activate transactions, try --bypass switch','err')
             sys.exit()
-        if "Ena " in data[2]:
+        if b"Ena " in data[2]:
             whine("Transaction "+ena_trans+" is already enabled", 'good')
             sys.exit();
         req_set_trans = 'Set TRANSACTION('+ena_trans.upper()+') ENA'
@@ -2182,7 +2189,7 @@ def activate_transaction(ena_trans):
     em.safe_send(format_request(req_set_trans))
     em.send_enter()
     data = em.screen_get()
-    if "NORMAL" in data[2]:
+    if b"NORMAL" in data[2]:
         if ena_trans.upper()=="ALL":
             whine("All transactions are enabled", 'good')
         else:
@@ -2201,10 +2208,10 @@ def disable_journal():
 
     data = em.screen_get()
     for d in data:
-       if "Jou(" in d and "NORMAL" in d and "Dis" in d and "DFHLOG" not in d:
+       if b"Jou(" in d and b"NORMAL" in d and b"Dis" in d and b"DFHLOG" not in d:
            number_journals +=1;
            all_journals += 1;
-       elif "Jou(" in d and "NORMAL" not in d and "Ena" in d and "DFHLOG" not in d:
+       elif b"Jou(" in d and b"NORMAL" not in d and b"Ena" in d and b"DFHLOG" not in d:
            pos= d.find("Jou(") + len("Jou(")
            whine("Journal "+d[pos:pos+8]+" could not be disabled",'err')
            all_journals += 1;
@@ -2312,10 +2319,10 @@ def copy_tran(old_tran, new_tran):
     em.send_enter()
 
     data = em.screen_get()
-    if "DFHAC2002" in data[22]:
+    if b"DFHAC2002" in data[22]:
         whine("Cannot access CEDA, security violation","err")
         sys.exit()
-    elif "not found" in data[20]:
+    elif b"not found" in data[20]:
          whine(old_tran+" could not be found on CICS","err")
          sys.exit()
 
@@ -2377,7 +2384,7 @@ def main(results):
     elif results.trans:
         if len(results.pattern) > 4:
            whine('Transaction ID cannot be over 4 characters, ID will be truncated','err')
-        if len(results.pattern) < 4 and "*" not in results.pattern:
+        if len(results.pattern) < 4 and b"*" not in results.pattern:
            results.pattern +="****"
 
         transid = results.pattern[:4]
@@ -2387,7 +2394,7 @@ def main(results):
     elif results.files:
         if len(results.pattern) > 8:
             whine('Filename cannot be over 8 characters, Name will be truncated','err')
-        if len(results.pattern) < 8 and "*" not in results.pattern:
+        if len(results.pattern) < 8 and b"*" not in results.pattern:
            results.pattern +="********"
 
         filename = results.pattern[:8]
@@ -2398,7 +2405,7 @@ def main(results):
     elif results.tsqueues:
         if len(results.pattern) > 16:
            whine('TS queues\' ID cannot be over 16 characters, TS queue name will be truncated','err')
-        if len(results.pattern) < 16 and "*" not in results.pattern:
+        if len(results.pattern) < 16 and b"*" not in results.pattern:
            results.pattern +="****"
 
         tsqueues = results.pattern[:16]
