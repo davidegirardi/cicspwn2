@@ -125,7 +125,7 @@ class EmulatorIntermediate(Emulator):
                                 return True # Hah, we win, take that mainframe
                         else:
                                 return False # we entered what we could, bailing
-                except CommandError, e:
+                except CommandError as e:
                         # We hit an error, get mad
                         return False
                         # if str(e) == 'Keyboard locked':
@@ -137,7 +137,7 @@ class EmulatorIntermediate(Emulator):
                                 try:
                                         if self.string_found(rows, cols, response):
                                                 return True
-                                except CommandError, e:
+                                except CommandError as e:
                                         # We hit a read error, usually because the screen hasn't returned
                                         # increasing the delay works
                                         sleep(self.delay)
@@ -196,7 +196,7 @@ class ThreadListen(threading.Thread):
                 whine('Payload delivered ('+str(rc)+' bytes)','good')
             else:
                 whine('Payload could not be delivered','err')
-        except Exception, e:
+        except Exception as e:
             pass
 
 
