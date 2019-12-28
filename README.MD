@@ -5,6 +5,8 @@ Upgrade of [CICSpwn by Ayoub Elaassal](https://github.com/ayoul3/cicspwn) with s
 - [x] Unix newlines
 - [x] Retab (only spaces) / trailing spaces / newlines cleanup
 - [ ] ~~Port to~~ Make it run with Python 3
+    - [x] option `-a`
+    - [x] option `-A`
 - [ ] Refactoring
 - [ ] Add support for non-US codepages
 - [ ] Add support for custom login transactions
