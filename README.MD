@@ -2,8 +2,8 @@
 Upgrade of [CICSpwn by Ayoub Elaassal](https://github.com/ayoul3/cicspwn) with some improvements and Python3 support.
 
 ## Goals
-- [ ] Unix newlines
-- [ ] Retab (only spaces) / leading spaces / newlines cleanup
+- [x] Unix newlines
+- [x] Retab (only spaces) / trailing spaces / newlines cleanup
 - [ ] Port to Python 3
 - [ ] Add support for non-US codepages
 - [ ] Add support for custom login transactions
