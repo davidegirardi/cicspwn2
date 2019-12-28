@@ -1,6 +1,8 @@
 # -*- coding: utf-8 -*-
 
 from __future__ import print_function
+from __future__ import absolute_import
+from __future__ import division 
 import os
 import re
 import sys
@@ -83,25 +85,25 @@ class EmulatorIntermediate(Emulator):
 
         def send_enter(self): # Allow a delay to be configured
 
-                self.exec_command('Enter')
+                self.exec_command(b'Enter')
                 if self.delay > 0:
                         sleep(self.delay)
 
         def send_clear(self): # Allow a delay to be configured
-                self.exec_command('Clear')
+                self.exec_command(b'Clear')
                 if self.delay > 0:
                         sleep(self.delay)
 
         def send_eraseEOF(self): # Allow a delay to be configured
-                self.exec_command('EraseEOF')
+                self.exec_command(b'EraseEOF')
                 if self.delay > 0:
                         sleep(self.delay)
 
         def send_pf11(self):
-                self.exec_command('PF(11)')
+                self.exec_command(b'PF(11)')
 
         def screen_get(self):
-                response = self.exec_command('Ascii()')
+                response = self.exec_command(b'Ascii()')
                 if ''.join(response.data).strip() == "":
                     sleep(0.5)
                     return self.screen_get()
@@ -155,7 +157,7 @@ class EmulatorIntermediate(Emulator):
                 # This is then what we are looking for
 
                 for _ in range(0,2):
-                        response = self.exec_command('ReadBuffer(Ascii)')
+                        response = self.exec_command(b'ReadBuffer(Ascii)')
                         if ''.join(response.data).strip()=="":
                                 sleep(0.3)
                         else:
@@ -170,13 +172,13 @@ class EmulatorIntermediate(Emulator):
 
     # Get the current x3270 cursor position
         def get_pos(self):
-                results = self.exec_command('Query(Cursor)')
+                results = self.exec_command(b'Query(Cursor)')
                 row = int(results.data[0].split(' ')[0])
                 col = int(results.data[0].split(' ')[1])
                 return (row,col)
 
         def get_hostinfo(self):
-                return self.exec_command('Query(Host)').data[0].split(' ')
+                return self.exec_command(b'Query(Host)').data[0].split(' ')
 
 class ThreadListen(threading.Thread):
     """Threaded client connection for reverse REXX"""
