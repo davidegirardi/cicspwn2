@@ -644,7 +644,7 @@ def activate_supplied(old_name, old_group, new_name, new_group):
     global CEMT
 
     em.move_to(1,2)
-    req_copy ="CEDA COPY TRANS("+old_name.upper()+") GROUP("+old_group.upper()+") AS("+new_name.upper()+") TO("+new_group.upper()+")"
+    req_copy ="CEDA COPY TRANS("+old_name.upper()+") GROUP("+old_group.decode().upper()+") AS("+new_name.upper()+") TO("+new_group.upper()+")"
     em.safe_send(format_request(req_copy));
     em.send_enter();
 
