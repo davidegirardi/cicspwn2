@@ -13,6 +13,7 @@ Upgrade of [CICSpwn by Ayoub Elaassal](https://github.com/ayoul3/cicspwn) with s
     - [x] option `-q` worked already after fixing `-A`
     - [x] option `--ceci` worked already after fixing `-A`
     - [x] option `--cemt`
+    - [x] option `--bypass`
 - [ ] Refactoring
 - [ ] Add support for non-US codepages
 - [ ] Add support for custom login transactions

@@ -656,7 +656,7 @@ def activate_supplied(old_name, old_group, new_name, new_group):
 
     elif not b"COPY SUCCESSFUL" in data[22]:
         whine('Could not copy '+old_name.upper()+' to a new transaction name '+new_name.upper()+' in group '+new_group.upper(),'err',1)
-        whine(data[22],'err')
+        whine(data[22].decode(),'err')
         return False
     else:
         whine(old_name.upper()+' successfully copied to '+new_name.upper(),'good',1)
