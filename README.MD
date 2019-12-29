@@ -7,6 +7,12 @@ Upgrade of [CICSpwn by Ayoub Elaassal](https://github.com/ayoul3/cicspwn) with s
 - [ ] ~~Port to~~ Make it run with Python 3
     - [x] option `-a`
     - [x] option `-A`
+    - [x] option `-i` worked already after fixing `-A`
+    - [x] option `-u` worked already after fixing `-A`
+    - [x] option `-p` worked already after fixing `-A`
+    - [x] option `-q` worked already after fixing `-A`
+    - [x] option `--ceci` worked already after fixing `-A`
+    - [x] option `--cemt`
 - [ ] Refactoring
 - [ ] Add support for non-US codepages
 - [ ] Add support for custom login transactions

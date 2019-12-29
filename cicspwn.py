@@ -528,7 +528,7 @@ def send_cics(request, double=False):
     elif b"RESPONSE: NOSPOOL" in data[22]:
         return False
     else:
-        whine('Error:' + data[22],'err')
+        whine('Error:' + data[22].decode(),'err')
         return False
 
 def get_hql_files():
